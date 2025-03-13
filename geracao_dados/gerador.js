@@ -1,49 +1,100 @@
-const { faker } = require('@faker-js/faker');
+const { Pool } = require("pg");
+const { faker } = require("@faker-js/faker");
 
-// Configurações fixas
-const professores = [
-  { id: 1, nome: 'Prof. Ana', disciplina: 'Matemática' },
-  { id: 2, nome: 'Prof. Bruno', disciplina: 'Português' },
-  { id: 3, nome: 'Prof. Carlos', disciplina: 'História' },
-  { id: 4, nome: 'Prof. Daniela', disciplina: 'Geografia' },
-  { id: 5, nome: 'Prof. Eduardo', disciplina: 'Ciências' },
-  { id: 6, nome: 'Prof. Fernanda', disciplina: 'Inglês' },
-  { id: 7, nome: 'Prof. Gustavo', disciplina: 'Física' },
-  { id: 8, nome: 'Prof. Helena', disciplina: 'Química' }
-];
-
-const turmas = Array.from({ length: 6 }, (_, id) => ({
-  id: id + 1,
-  nome: `Turma ${id + 1}`,
-  professorId: professores[id % professores.length].id
-}));
-
-const alunos = [];
-turmas.forEach(turma => {
-  for (let i = 0; i < 2; i++) {
-    alunos.push({
-      id: alunos.length + 1,
-      nome: faker.person.fullName(),
-      turmaId: turma.id
-    });
-  }
+const pool = new Pool({
+    user: "postgres",
+    host: "localhost",
+    database: "escola",
+    password: "219751672Dd*",
+    port: 5432,
 });
 
-// Função para aplicação de provas
-const provas = [];
-function aplicarProva() {
-  const novaProva = alunos.map(aluno => ({
-    alunoId: aluno.id,
-    turmaId: aluno.turmaId,
-    nota: parseFloat((Math.random() * 10).toFixed(2)),
-    data: new Date().toISOString()
-  }));
-  provas.push(...novaProva);
-  console.log('Nova prova aplicada:', JSON.stringify(novaProva, null, 2));
+const CATEGORIAS = ["Exatas", "Humanas", "Biológicas"];
+const MODULOS = ["Básico", "Intermediário", "Avançado"];
+const DIFICULDADES = ["Fácil", "Médio", "Difícil"];
+const GENEROS = ["H", "M", "O"];
+
+async function inserirDadosFixos() {
+    try {
+        const client = await pool.connect();
+
+        // Criar matérias
+        await client.query("TRUNCATE materia RESTART IDENTITY CASCADE");
+        for (let i = 1; i <= 8; i++) {
+            await client.query(
+                "INSERT INTO materia (nome, modulo, categoria) VALUES ($1, $2, $3)",
+                [faker.science.chemicalElement().name, faker.helpers.arrayElement(MODULOS), faker.helpers.arrayElement(CATEGORIAS)]
+            );
+        }
+
+        // Criar professores
+        await client.query("TRUNCATE professor RESTART IDENTITY CASCADE");
+        for (let i = 1; i <= 8; i++) {
+            await client.query(
+                "INSERT INTO professor (nome, nivel_academico) VALUES ($1, $2)",
+                [faker.person.fullName(), "Doutorado"]
+            );
+        }
+
+        // Criar alunos
+        await client.query("TRUNCATE aluno RESTART IDENTITY CASCADE");
+        for (let i = 1; i <= 90; i++) {
+            await client.query(
+                "INSERT INTO aluno (nome, email, nascimento, genero) VALUES ($1, $2, $3, $4)",
+                [
+                    faker.person.fullName(),
+                    faker.internet.email(),
+                    faker.date.birthdate({ min: 18, max: 30, mode: "age" }),
+                    faker.helpers.arrayElement(GENEROS),
+                ]
+            );
+        }
+
+        client.release();
+        console.log("Dados fixos inseridos com sucesso!");
+    } catch (err) {
+        console.error("Erro ao inserir dados fixos:", err);
+    }
 }
 
-// Aplicação de provas a cada 10 segundos
-setInterval(aplicarProva, 10000);
+async function gerarAvaliacaoEResultados() {
+    try {
+        const client = await pool.connect();
+        const { rows: professores } = await client.query("SELECT id FROM professor");
+        const { rows: materias } = await client.query("SELECT id FROM materia");
+        const { rows: alunos } = await client.query("SELECT id FROM aluno");
 
-// Exibir os dados iniciais
-console.log(JSON.stringify({ professores, turmas, alunos }, null, 2));
+        if (!professores.length || !materias.length || !alunos.length) {
+            console.log("Dados insuficientes para gerar avaliações.");
+            return;
+        }
+
+        const fk_professor = faker.helpers.arrayElement(professores).id;
+        const fk_materia = faker.helpers.arrayElement(materias).id;
+        const dificuldade = faker.helpers.arrayElement(DIFICULDADES);
+
+        const { rows } = await client.query(
+            "INSERT INTO avaliacao (fk_professor, fk_materia, dificuldade) VALUES ($1, $2, $3) RETURNING id",
+            [fk_professor, fk_materia, dificuldade]
+        );
+        const fk_avaliacao = rows[0].id;
+
+        for (const aluno of alunos) {
+            const nota = parseFloat((Math.random() * 100).toFixed(2));
+            await client.query(
+                "INSERT INTO resultado_avaliacao (fk_aluno, fk_avaliacao, nota) VALUES ($1, $2, $3)",
+                [aluno.id, fk_avaliacao, nota]
+            );
+        }
+
+        client.release();
+        console.log(`Avaliação ${fk_avaliacao} gerada com sucesso!`);
+    } catch (err) {
+        console.error("Erro ao gerar avaliação e resultados:", err);
+    }
+}
+
+(async () => {
+    await inserirDadosFixos();
+    setInterval(gerarAvaliacaoEResultados, 10000);
+})();
