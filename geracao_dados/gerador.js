@@ -2,99 +2,94 @@ const { Pool } = require("pg");
 const { faker } = require("@faker-js/faker");
 
 const pool = new Pool({
-    user: "postgres",
-    host: "localhost",
-    database: "escola",
-    password: "219751672Dd*",
-    port: 5432,
+  user: "admin",
+  host: "localhost",
+  database: "escola",
+  password: "admin",
+  port: 5432,
 });
 
-const CATEGORIAS = ["Exatas", "Humanas", "Biológicas"];
-const MODULOS = ["Básico", "Intermediário", "Avançado"];
-const DIFICULDADES = ["Fácil", "Médio", "Difícil"];
-const GENEROS = ["H", "M", "O"];
+//definindo as materias
+const materias = [
+  { nome: "Matemática", modulo: "Fundamental", categoria: "Exatas" },
+  { nome: "Português", modulo: "Fundamental", categoria: "Linguagens" },
+  { nome: "História", modulo: "Fundamental", categoria: "Humanas" },
+  { nome: "Física", modulo: "Médio", categoria: "Exatas" },
+  { nome: "Química", modulo: "Médio", categoria: "Exatas" },
+  { nome: "Biologia", modulo: "Médio", categoria: "Ciências da Natureza" },
+  { nome: "Geografia", modulo: "Médio", categoria: "Humanas" },
+  { nome: "Inglês", modulo: "Fundamental", categoria: "Linguagens" },
+];
+const professores = [
+  { nome: "Carlos Silva", nivel_academico: "Doutorado" },
+  { nome: "Ana Souza", nivel_academico: "Mestrado" },
+  { nome: "Roberto Lima", nivel_academico: "Doutorado" },
+  { nome: "Fernanda Alves", nivel_academico: "Mestrado" },
+  { nome: "João Mendes", nivel_academico: "Graduação" },
+  { nome: "Mariana Costa", nivel_academico: "Graduação" },
+  { nome: "Ricardo Pereira", nivel_academico: "Mestrado" },
+  { nome: "Patrícia Santos", nivel_academico: "Doutorado" },
+];
+const TOTAL_ALUNOS = 20; //Define a quantidade de alunos
 
-async function inserirDadosFixos() {
-    try {
-        const client = await pool.connect();
+function gerarAlunos(qtd) {
+  const alunos = [];
+  const generos = ["H", "M", "O"];
 
-        // Criar matérias
-        await client.query("TRUNCATE materia RESTART IDENTITY CASCADE");
-        for (let i = 1; i <= 8; i++) {
-            await client.query(
-                "INSERT INTO materia (nome, modulo, categoria) VALUES ($1, $2, $3)",
-                [faker.science.chemicalElement().name, faker.helpers.arrayElement(MODULOS), faker.helpers.arrayElement(CATEGORIAS)]
-            );
-        }
+  for (let i = 0; i < qtd; i++) {
+    const primeiroNome = faker.person.firstName();
+    const sobreNome = faker.person.lastName();
+    const email = `${primeiroNome.toLowerCase()}.${sobrenome}@escola.com.br`;
+    const nascimento = faker.date
+      .birthdate({ min: 12, max: 17, mode: "age" })
+      .toISOString()
+      .split("T")[0];
+    const genero = faker.helpers.arrayElement(generos);
 
-        // Criar professores
-        await client.query("TRUNCATE professor RESTART IDENTITY CASCADE");
-        for (let i = 1; i <= 8; i++) {
-            await client.query(
-                "INSERT INTO professor (nome, nivel_academico) VALUES ($1, $2)",
-                [faker.person.fullName(), "Doutorado"]
-            );
-        }
+    alunos.push({ nome: nomeCompleto, email, nascimento, genero });
+  }
 
-        // Criar alunos
-        await client.query("TRUNCATE aluno RESTART IDENTITY CASCADE");
-        for (let i = 1; i <= 90; i++) {
-            await client.query(
-                "INSERT INTO aluno (nome, email, nascimento, genero) VALUES ($1, $2, $3, $4)",
-                [
-                    faker.person.fullName(),
-                    faker.internet.email(),
-                    faker.date.birthdate({ min: 18, max: 30, mode: "age" }),
-                    faker.helpers.arrayElement(GENEROS),
-                ]
-            );
-        }
-
-        client.release();
-        console.log("Dados fixos inseridos com sucesso!");
-    } catch (err) {
-        console.error("Erro ao inserir dados fixos:", err);
-    }
+  return alunos;
 }
 
-async function gerarAvaliacaoEResultados() {
-    try {
-        const client = await pool.connect();
-        const { rows: professores } = await client.query("SELECT id FROM professor");
-        const { rows: materias } = await client.query("SELECT id FROM materia");
-        const { rows: alunos } = await client.query("SELECT id FROM aluno");
+async function inserirDadosFixos() {
+  try {
+    const client = await pool.connect();
 
-        if (!professores.length || !materias.length || !alunos.length) {
-            console.log("Dados insuficientes para gerar avaliações.");
-            return;
-        }
-
-        const fk_professor = faker.helpers.arrayElement(professores).id;
-        const fk_materia = faker.helpers.arrayElement(materias).id;
-        const dificuldade = faker.helpers.arrayElement(DIFICULDADES);
-
-        const { rows } = await client.query(
-            "INSERT INTO avaliacao (fk_professor, fk_materia, dificuldade) VALUES ($1, $2, $3) RETURNING id",
-            [fk_professor, fk_materia, dificuldade]
-        );
-        const fk_avaliacao = rows[0].id;
-
-        for (const aluno of alunos) {
-            const nota = parseFloat((Math.random() * 100).toFixed(2));
-            await client.query(
-                "INSERT INTO resultado_avaliacao (fk_aluno, fk_avaliacao, nota) VALUES ($1, $2, $3)",
-                [aluno.id, fk_avaliacao, nota]
-            );
-        }
-
-        client.release();
-        console.log(`Avaliação ${fk_avaliacao} gerada com sucesso!`);
-    } catch (err) {
-        console.error("Erro ao gerar avaliação e resultados:", err);
+    // Criar matérias
+    await client.query("TRUNCATE materia RESTART IDENTITY CASCADE");
+    for (const materia of materias) {
+      await client.query(
+        "INSERT INTO materia (nome, modulo, categoria) VALUES ($1, $2, $3)",
+        [materia.nome, materia.modulo, materia.categoria]
+      );
+      console.log(`Matéria ${materia.nome} inserida.`);
     }
+
+    //Criar professores
+    for (const professor of professores) {
+      await client.query(
+        "INSERT INTO professor (nome, nivel_academico) VALUES ($1, $2)",
+        [professor.nome, professor.nivel_academico]
+      );
+      console.log(`Professor ${professor.nome} inserido.`);
+    }
+
+    //Criar alunos
+    const alunos = gerarAlunos(TOTAL_ALUNOS);
+
+    for (const aluno of alunos) {
+      await client.query(
+        "INSERT INTO aluno (nome, email, nascimento, genero) VALUES ($1, $2, $3, $4)",
+        [aluno.nome, aluno.email, aluno.nascimento, aluno.genero]
+      );
+      console.log(`Aluno ${aluno.nome} inserido.`);
+    }
+  } catch (err) {
+    console.error("Erro ao dados fixos", err);
+  }
 }
 
 (async () => {
-    await inserirDadosFixos();
-    setInterval(gerarAvaliacaoEResultados, 10000);
+  await inserirDadosFixos();
 })();
