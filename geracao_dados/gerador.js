@@ -158,7 +158,7 @@ async function gerarAvaliacaoEResultados() {
 
       // Aplicar multiplicadores
       nota = nota * multiplicador_professor * multiplicador_dificuldade;
-
+      
       // Garantir que a nota não ultrapasse 100
       nota = Math.min(nota, 100);
 

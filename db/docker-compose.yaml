@@ -27,7 +27,7 @@ services:
       DB_PASSWORD: admin
       DB_NAME: escola
       DB_PORT: 5432
-    command: ["node", "index.js"]
+    command: ["node", "gerador.js"]
 
 volumes:
   postgres_data:
