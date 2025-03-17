@@ -15,5 +15,19 @@ services:
       - postgres_data:/var/lib/postgresql/data
       - ./init.sql:/docker-entrypoint-initdb.d/init.sql
 
+  node_app:
+    build: ../geracao_dados
+    container_name: escola-node
+    restart: always
+    depends_on:
+      - postgres
+    environment:
+      DB_HOST: escola-db
+      DB_USER: admin
+      DB_PASSWORD: admin
+      DB_NAME: escola
+      DB_PORT: 5432
+    command: ["node", "index.js"]
+
 volumes:
   postgres_data:

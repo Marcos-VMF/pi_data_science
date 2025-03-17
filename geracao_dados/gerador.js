@@ -1,13 +1,15 @@
 const { Pool } = require("pg");
 const { faker } = require("@faker-js/faker");
 
+env = process.env;
 const pool = new Pool({
-  user: "admin",
-  host: "localhost",
-  database: "escola",
-  password: "admin",
-  port: 5432,
+  user: env.DB_USER || "admin",
+  host: env.DB_HOST || "localhost",
+  database: env.DB_NAME || "escola",
+  password: env.DB_PASSWORD || "admin",
+  port: env.DB_PORT ? parseInt(env.DB_PORT) : 5432,
 });
+
 
 //definindo as materias
 const materias = [
