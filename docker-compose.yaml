@@ -1,33 +1,67 @@
-version: '3.8'
-
 services:
-  postgres:
-    image: postgres:latest
+  escola-db:
+    image: postgres:17
     container_name: escola-db
-    restart: always
     environment:
       POSTGRES_DB: escola
-      POSTGRES_USER: admin
+      POSTGRES_USER: postgres
       POSTGRES_PASSWORD: admin
+      POSTGRES_HOST_AUTH_METHOD: trust
     ports:
-      - "5432:5432"
+      - "5433:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
       - ./db/init.sql:/docker-entrypoint-initdb.d/init.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d escola"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    deploy:
+      resources:
+        limits:
+          memory: 512M
 
-  node_app:
-    build: ./geracao_dados/
+  escola-node:
+    build: ./geracao_dados
     container_name: escola-node
-    restart: always
     depends_on:
-      - postgres
+      escola-db:
+        condition: service_healthy
     environment:
       DB_HOST: escola-db
-      DB_USER: admin
+      DB_USER: postgres
       DB_PASSWORD: admin
       DB_NAME: escola
       DB_PORT: 5432
-    command: ["node", "gerador.js"]
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+
+  escola-api:
+    build: ./api
+    container_name: escola-api
+    ports:
+      - "8000:8000"
+    depends_on:
+      escola-db:
+        condition: service_healthy
+    environment:
+      DB_HOST: escola-db
+      DB_USER: postgres
+      DB_PASSWORD: admin
+      DB_NAME: escola
+      DB_PORT: 5432
+      DATABASE_URL: "postgresql://postgres:admin@escola-db:5432/escola"
+    volumes:
+      - ./api:/app
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 512M
 
 volumes:
   postgres_data:
