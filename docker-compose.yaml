@@ -1,14 +1,15 @@
 services:
   escola-db:
-    image: postgres:17
     container_name: escola-db
+    build:
+      context: ./db
     environment:
       POSTGRES_DB: escola
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: admin
       POSTGRES_HOST_AUTH_METHOD: trust
-    ports:
-      - "5433:5432"
+    # ports:
+    #   - "5433:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
       - ./db/init.sql:/docker-entrypoint-initdb.d/init.sql
@@ -21,6 +22,8 @@ services:
       resources:
         limits:
           memory: 512M
+    networks:
+      - rede-projeto
 
   escola-node:
     build: ./geracao_dados
@@ -39,6 +42,8 @@ services:
       resources:
         limits:
           memory: 256M
+    networks:
+      - rede-projeto
 
   escola-api:
     build: ./api
@@ -55,13 +60,34 @@ services:
       DB_NAME: escola
       DB_PORT: 5432
       DATABASE_URL: "postgresql://postgres:admin@escola-db:5432/escola"
-    volumes:
-      - ./api:/app
+    # volumes:
+    #   - ./api:/app
     restart: unless-stopped
     deploy:
       resources:
         limits:
           memory: 512M
+    networks:
+      - rede-projeto
+  
+  escola-frontend:
+    build: ./client
+    container_name: escola-frontend
+    ports:
+      - "3000:3000"
+    depends_on:
+      escola-api:
+        condition: service_started
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+    networks:
+      - rede-projeto
 
 volumes:
   postgres_data:
+networks:
+  rede-projeto:
+    driver: bridge

@@ -43,7 +43,7 @@ function gerarAlunos(qtd) {
     const genero = ["H", "M", "O"][Math.floor(Math.random() * 3)];
     const primeiroNome = faker.person.firstName(genero === "M" ? "female" : genero === "H" ? "male" : undefined);
     const sobreNome = faker.person.lastName();
-    
+
     return {
       nome: `${primeiroNome} ${sobreNome}`,
       email: `${primeiroNome.toLowerCase()}.${sobreNome.toLowerCase()}@escola.com.br`,
@@ -122,7 +122,7 @@ async function gerarAvaliacao() {
 
     // Obtém todos os alunos de uma só vez
     const alunos = await client.query("SELECT id FROM aluno");
-    
+
     // Prepara valores para inserção em lote
     const valores = alunos.rows.map(aluno => [
       aluno.id,
@@ -159,7 +159,7 @@ async function main() {
     console.log("✅ Conexão com o banco de dados estabelecida");
 
     await inserirDadosFixos();
-    
+
     // Configura intervalo com tratamento de erro
     const intervalo = setInterval(async () => {
       try {
@@ -167,7 +167,7 @@ async function main() {
       } catch (error) {
         console.error("Erro durante geração de avaliação:", error);
       }
-    }, 60000);
+    }, 2000);
 
     console.log("⏳ Gerador de avaliações iniciado (1 minuto/avaliação)");
 
