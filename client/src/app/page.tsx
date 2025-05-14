@@ -11,16 +11,16 @@ interface Resultado {
   res_id: number;
   nota: number;
   aprovacao: boolean;
-  res_data: string; // ou Date, se você converter depois
+  res_data: string; 
   tentativa: number;
   ava_id: number;
-  ava_data: string; // ou Date
+  ava_data: string; 
   dificuldade: string;
   alu_id: number;
   alu_nome: string;
   email: string;
-  inscricao: string; // ou Date
-  nascimento: string; // ou Date
+  inscricao: string; 
+  nascimento: string;
   genero: string;
   pro_id: number;
   pro_nome: string;
@@ -52,7 +52,7 @@ export default function Home() {
     const totalStudents = [...new Set(resultados.map((r) => r.alu_id))].length;
     const totalAvaliacoes = [...new Set(resultados.map((r) => r.res_id))].length;
     const totalProfessores = [...new Set(resultados.map((r) => r.pro_id))].length;
-    const passedStudents = resultados.filter((r) => r.aprovacao === true).length;
+    const passedStudents = (resultados.filter((r) => r.aprovacao === true).length * 100) / resultados.length;
     const averageScore = resultados.reduce((sum, r) => sum + r.nota, 0) / resultados.length;
 
     return (
@@ -60,7 +60,7 @@ export default function Home() {
         <section className="text-center">
           <div className="stats">
             <KpiCard
-              title="Total de Alunos"
+              title="Total de Professores"
               value={totalProfessores}
               icon={<FaChartBar />}
               color="bg-blue-500"
@@ -78,21 +78,21 @@ export default function Home() {
               color="bg-yellow-500"
             />
             <KpiCard
-              title="Alunos Aprovados"
-              value={passedStudents}
+              title="Avaliações com Resultado [Aprovado]"
+              value={passedStudents.toFixed(1) + `%`}
               icon={<FaCheckCircle />}
               color="bg-green-500"
             />
             <KpiCard
               title="Nota Média"
-              value={averageScore.toFixed(2)}
+              value={averageScore.toFixed(1) + `%`}
               icon={<FaTimesCircle />}
               color="bg-yellow-500"
             />
           </div>
         </section>
 
-        <section className="grid gap-6 p-6 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
+        <section className="grid gap-6 p-6 grid-cols-1 lg:grid-cols-2 xl:grid-cols-3">
           <div>
             <NotasPorMateriaChart resultados={resultados} />
           </div>
