@@ -1,0 +1,110 @@
+{
+    "title": "NGINX Loki Dashboard",
+    "uid": "nginx-loki",
+    "version": 1,
+    "schemaVersion": 36,
+    "refresh": "5s",
+    "panels": [
+        {
+            "title": "Requests Per Second",
+            "type": "timeseries",
+            "gridPos": {
+                "x": 0,
+                "y": 0,
+                "w": 12,
+                "h": 8
+            },
+            "targets": [
+                {
+                    "expr": "count_over_time({job=\"nginx\"} | json | status!=\"\" [1s])",
+                    "refId": "A",
+                    "datasource": {
+                        "type": "loki",
+                        "uid": "${DS_LOKI}"
+                    }
+                }
+            ]
+        },
+        {
+            "title": "HTTP Status Codes",
+            "type": "timeseries",
+            "gridPos": {
+                "x": 12,
+                "y": 0,
+                "w": 12,
+                "h": 8
+            },
+            "targets": [
+                {
+                    "expr": "count_over_time({job=\"nginx\"} | json | status!=\"\" | line_format \"{{.status}}\" [1m])",
+                    "refId": "A",
+                    "datasource": {
+                        "type": "loki",
+                        "uid": "${DS_LOKI}"
+                    },
+                    "legendFormat": "{{status}}"
+                }
+            ]
+        },
+        {
+            "title": "Request Time (Latency)",
+            "type": "timeseries",
+            "gridPos": {
+                "x": 0,
+                "y": 8,
+                "w": 12,
+                "h": 8
+            },
+            "targets": [
+                {
+                    "expr": "avg_over_time({job=\"nginx\"} | json | unwrap request_time [1m])",
+                    "refId": "A",
+                    "datasource": {
+                        "type": "loki",
+                        "uid": "${DS_LOKI}"
+                    }
+                }
+            ]
+        },
+        {
+            "title": "Upstream Response Time",
+            "type": "timeseries",
+            "gridPos": {
+                "x": 12,
+                "y": 8,
+                "w": 12,
+                "h": 8
+            },
+            "targets": [
+                {
+                    "expr": "avg_over_time({job=\"nginx\"} | json | unwrap upstream_response_time [1m])",
+                    "refId": "A",
+                    "datasource": {
+                        "type": "loki",
+                        "uid": "${DS_LOKI}"
+                    }
+                }
+            ]
+        },
+        {
+            "title": "Top Client IPs",
+            "type": "table",
+            "gridPos": {
+                "x": 0,
+                "y": 16,
+                "w": 24,
+                "h": 10
+            },
+            "targets": [
+                {
+                    "expr": "topk(10, count_over_time({job=\"nginx\"} | json | remote_addr!=\"\" | line_format \"{{.remote_addr}}\" [5m]))",
+                    "refId": "A",
+                    "datasource": {
+                        "type": "loki",
+                        "uid": "${DS_LOKI}"
+                    }
+                }
+            ]
+        }
+    ]
+}

@@ -94,6 +94,8 @@ services:
     volumes:
       - ./server/nginx.conf:/etc/nginx/nginx.conf
       - nginx_logs:/var/log/nginx
+      - ./server/nginx-entrypoint.sh:/nginx-entrypoint.sh
+    entrypoint: ["/nginx-entrypoint.sh"]
     depends_on:
       - escola-api
       - escola-frontend
@@ -101,20 +103,51 @@ services:
       - rede-projeto
   
 
-  otel-lgtm:
-    build: ./log
-    container_name: otel-lgtm
-    ports:
-      - "9999:3000"
-      - "4317:4317" 
-      - "4318:4318" 
-    volumes:
-      - nginx_logs:/var/log/nginx:ro
+  grafana:
+    image: grafana/grafana-oss
+    container_name: grafana
     restart: unless-stopped
+    ports:
+      - '4000:3000'
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./grafana/dashboards:/etc/grafana/dashboards
+      - ./grafana/provisioning/dashboards:/etc/grafana/provisioning/dashboards
+      - ./grafana/provisioning/datasources:/etc/grafana/provisioning/datasources
+    networks:
+      - grafana
+
+  loki:
+    image: grafana/loki:3.0.1
+    container_name: grafana-loki
+    user: "0" # To force the container to use root user and avoid permission problems
+    command: -config.file=/etc/loki/local-config.yaml
+    volumes:
+      - ./loki/loki-config.yaml:/etc/loki/local-config.yaml
+      - ./loki/loki_data:/loki
+    restart: unless-stopped
+    ports:
+      - "3100:3100"
+    networks:
+      - grafana
+
+  promtail:
+    image: grafana/promtail:2.9.0
+    container_name: promtail
+    volumes:
+      - nginx_logs:/var/log/nginx/ 
+      - ./promtail/promtail-config.yaml:/etc/promtail/config.yml
+    command: -config.file=/etc/promtail/config.yml
+    restart: unless-stopped
+    networks:
+      - grafana
 
 volumes:
+  grafana_data: {}
   postgres_data:
   nginx_logs:
 networks:
   rede-projeto:
+    driver: bridge
+  grafana:
     driver: bridge
