@@ -25,17 +25,23 @@ export default function NotasPorDificuldadeChart({ resultados }: Props) {
       grupo[dificuldade].push(nota);
     });
 
-    const labels = Object.keys(grupo);
-    const data = labels.map((dif) => {
-      const notas = grupo[dif];
-      return notas.reduce((a, b) => a + b, 0) / notas.length;
+    // Create array of { dificuldade, media }
+    const entries = Object.entries(grupo).map(([dificuldade, notas]) => {
+      const media = notas.reduce((a, b) => a + b, 0) / notas.length;
+      return { dificuldade, media: Number(media.toFixed(2)) };
     });
 
-    return { labels, data };
+    // Sort descending by media
+    entries.sort((a, b) => b.media - a.media);
+
+    return {
+      labels: entries.map(e => e.dificuldade),
+      data: entries.map(e => e.media)
+    };
   }, [resultados]);
 
   return (
-    <div className="card bg-base-100 shadow p-6">
+    <div className="card bg-base-100 shadow-lg p-4">
       <h2 className="text-xl font-bold mb-4">📈 Média de Notas por Dificuldade</h2>
       <Line
         data={{
@@ -55,7 +61,6 @@ export default function NotasPorDificuldadeChart({ resultados }: Props) {
           plugins: {
             title: {
               display: true,
-              text: 'Rendimento por Dificuldade'
             }
           }
         }}

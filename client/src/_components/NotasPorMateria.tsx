@@ -35,7 +35,7 @@ export default function NotasPorMateriaChart({ resultados }: Props) {
   }, [resultados]);
 
   return (
-    <div className="card bg-base-100 shadow p-6">
+    <div className="card bg-base-100 shadow-lg p-4">
       <h2 className="text-xl font-bold mb-4">📚 Média de Notas por Matéria</h2>
       <Bar
         data={{
@@ -52,7 +52,6 @@ export default function NotasPorMateriaChart({ resultados }: Props) {
           responsive: true,
           plugins: {
             legend: { position: 'top' as const },
-            title: { display: true, text: 'Desempenho por Matéria' },
           },
         }}
       />

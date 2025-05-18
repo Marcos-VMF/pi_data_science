@@ -8,7 +8,7 @@ import {
 ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend);
 
 interface Resultado {
-  pro_nome: string;
+  nivel_academico: string;
   nota: number;
 }
 
@@ -16,28 +16,32 @@ interface Props {
   resultados: Resultado[];
 }
 
-export default function NotasPorProfessorChart({ resultados }: Props) {
+export default function NotasPorNivelAcademicoChart({ resultados }: Props) {
   const { labels, data } = useMemo(() => {
     const agrupado: Record<string, number[]> = {};
 
-    resultados.forEach(({ pro_nome, nota }) => {
-      if (!agrupado[pro_nome]) agrupado[pro_nome] = [];
-      agrupado[pro_nome].push(nota);
+    resultados.forEach(({ nivel_academico, nota }) => {
+      if (!agrupado[nivel_academico]) agrupado[nivel_academico] = [];
+      agrupado[nivel_academico].push(nota);
     });
 
-    const labels = Object.keys(agrupado);
-    const data = labels.map((pro) => {
-      const notas = agrupado[pro];
+    const entries = Object.entries(agrupado).map(([nivel, notas]) => {
       const media = notas.reduce((a, b) => a + b, 0) / notas.length;
-      return Number(media.toFixed(2));
+      return { nivel, media: Number(media.toFixed(2)) };
     });
 
-    return { labels, data };
+    // Sort descending by average (media)
+    entries.sort((a, b) => b.media - a.media);
+
+    return {
+      labels: entries.map(e => e.nivel),
+      data: entries.map(e => e.media)
+    };
   }, [resultados]);
 
   return (
-    <div className="card bg-base-100 shadow p-6">
-      <h2 className="text-xl font-bold mb-4">🎓 Média de Notas por Professor</h2>
+    <div className="card bg-base-100 shadow-lg p-4">
+      <h2 className="text-xl font-bold mb-4">🎓 Média de Notas por Nível Acadêmico do Professor</h2>
       <Bar
         data={{
           labels,
@@ -46,7 +50,7 @@ export default function NotasPorProfessorChart({ resultados }: Props) {
         options={{
           responsive: true,
           plugins: {
-            title: { display: true, text: 'Desempenho por Professor' }
+            title: { display: true, }
           }
         }}
       />

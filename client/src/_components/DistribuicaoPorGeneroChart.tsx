@@ -8,6 +8,7 @@ import {
 ChartJS.register(ArcElement, Tooltip, Legend);
 
 interface Resultado {
+  alu_id: number;
   genero: string;
 }
 
@@ -17,9 +18,13 @@ interface Props {
 
 export default function DistribuicaoPorGeneroChart({ resultados }: Props) {
   const { labels, data } = useMemo(() => {
+    const uniqueByAluId = resultados.filter(
+      (item, index, self) =>
+        index === self.findIndex(t => t.alu_id === item.alu_id)
+    );
     const counts: Record<string, number> = {};
 
-    resultados.forEach(({ genero }) => {
+    uniqueByAluId.forEach(({ genero }) => {
       counts[genero] = (counts[genero] || 0) + 1;
     });
 
@@ -30,7 +35,7 @@ export default function DistribuicaoPorGeneroChart({ resultados }: Props) {
   }, [resultados]);
 
   return (
-    <div className="card bg-base-100 shadow p-6">
+    <div className="card bg-base-100 shadow-lg p-4">
       <h2 className="text-xl font-bold mb-4">🧍 Distribuição por Gênero</h2>
       <Pie
         data={{
@@ -40,14 +45,6 @@ export default function DistribuicaoPorGeneroChart({ resultados }: Props) {
             data,
             backgroundColor: ['#60a5fa', '#f472b6', '#34d399']
           }]
-        }}
-        options={{
-          plugins: {
-            title: {
-              display: true,
-              text: 'Alunos Avaliados por Gênero'
-            }
-          }
         }}
       />
     </div>
